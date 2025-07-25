@@ -74,8 +74,8 @@ services:
     volumes:
       - scada-data:/usr/src/app/FUXA/server/_appdata
     dns:
-     - 127.0.0.11
-      
+      - 127.0.0.11
+        
   plc:
     build: ./plc/
     cap_add:
@@ -138,6 +138,23 @@ services:
       - portal
     volumes:
       - portal-data:/app/portal/
+  
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    network_mode: host # required for Suricata to access network interfaces directly
+    cap_add:
+      - NET_ADMIN # allow Suricata to monitor network traffic
+      - NET_RAW
+    # networks:
+    #   - l2_network
+    #   - l3_network
+    volumes:
+      - ./suricata/etc:/etc/suricata              # Suricata config files
+      - ./suricata/log:/var/log/suricata          # Suricata logs
+      - ./suricata/rules:/var/lib/suricata/rules  # Suricata rules
+    command: -i eth0 -i br-6990a6af9f1b -i br-82d1c6fd2752 # -i eth1
+    restart: unless-stopped
 
 volumes:
   scada-data:
