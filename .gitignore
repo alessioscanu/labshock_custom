@@ -4,3 +4,4 @@ log.pcap.*
 *classification.config
 labshock/suricata/etc/reference.config
 labshock/suricata/etc/threshold.config
+*suricata.rules
