@@ -1,6 +1,6 @@
 *.json
 *.log
 log.pcap.*
-labshock/suricata/etc/classification.config
+*classification.config
 labshock/suricata/etc/reference.config
 labshock/suricata/etc/threshold.config
