@@ -5,3 +5,9 @@ log.pcap.*
 labshock/suricata/etc/reference.config
 labshock/suricata/etc/threshold.config
 *suricata.rules
+/labshock/zeek/main_config/zeek/cmake
+/labshock/zeek/main_config/zeek/base
+/labshock/zeek/main_config/zeek/policy
+/labshock/zeek/main_config/zeek/spicy
+/labshock/zeek/main_config/zeek/builtin-plugins
+labshock/zeek/main_config/zeek/test-all-policy.zeek
