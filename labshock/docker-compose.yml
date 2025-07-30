@@ -156,6 +156,25 @@ services:
     command: -i eth0 -i br-6990a6af9f1b -i br-82d1c6fd2752 # -i eth1
     restart: unless-stopped
 
+  zeek:
+    image: zeek/zeek:latest
+    container_name: zeek
+    network_mode: host # required for Suricata to access network interfaces directly
+    cap_add:
+      - NET_ADMIN # allow Suricata to monitor network traffic
+      - NET_RAW
+    # networks:
+    #   - l2_network
+    #   - l3_network
+    volumes:
+      - ./zeek/etc:/usr/local/zeek/etc/               # Zeek config files
+      - ./zeek/logs:/usr/local/zeek/logs              # Zeek logs
+      # - ./zeek/scripts:/usr/local/zeek/share/zeek     # Zeek scripts
+      # - ./zeek/main_config:/usr/local/zeek/share/zeek/site/  # Zeek main config file
+      - ./zeek/main_config/zeek:/usr/local/zeek/share/zeek/  # Zeek main config file
+    command: zeek -i eth0 # -i eth1
+    restart: unless-stopped
+
 volumes:
   scada-data:
   plc-data:    
