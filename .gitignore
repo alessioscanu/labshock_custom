@@ -11,4 +11,3 @@ labshock/suricata/etc/threshold.config
 /labshock/zeek/main_config/zeek/spicy
 /labshock/zeek/main_config/zeek/builtin-plugins
 labshock/zeek/main_config/zeek/test-all-policy.zeek
-/labshock/zeek/etc
