@@ -156,8 +156,29 @@ services:
     command: -i eth0 -i br-6990a6af9f1b -i br-82d1c6fd2752 # -i eth1
     restart: unless-stopped
 
+  elasticsearch:
+    image: elastic/elasticsearch:8.19.0
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false # turn off security
+      - discovery.type=single-node # no Elasticsearch cluster
+      - ELASTIC_PASSWORD=my_strong_password
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - l3_network
+
 volumes:
   scada-data:
   plc-data:    
   ews-data:
   portal-data:
+  esdata1:
+    driver: local
