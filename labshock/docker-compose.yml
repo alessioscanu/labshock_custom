@@ -175,6 +175,20 @@ services:
     networks:
       - l3_network
 
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.19.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=test
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - l3_network
+
 volumes:
   scada-data:
   plc-data:    
