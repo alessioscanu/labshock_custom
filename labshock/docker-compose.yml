@@ -189,6 +189,21 @@ services:
     networks:
       - l3_network
 
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.19.0
+    container_name: filebeat
+    user: root # run as root to access Docker logs
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro # configuration file (read-only)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro # read-only access to log files
+      - /var/run/docker.sock:/var/run/docker.sock:ro # read-only access to Docker socket for metadata
+    command: filebeat -e
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    networks:
+      - l3_network
+
 volumes:
   scada-data:
   plc-data:    
