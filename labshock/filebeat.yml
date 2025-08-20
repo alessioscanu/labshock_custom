@@ -1,15 +1,41 @@
-filebeat.config:
-  modules:
-    path: ${path.config}/modules.d/*.yml
-    reload.enabled: false
+# ============================== Filebeat inputs ===============================
+# This section is left empty because we will use modules instead of manual inputs.
+# The 'filebeat.inputs' setting is typically for manual, custom log ingestion.
 
-filebeat.autodiscover:
-  providers:
-    - type: docker
-      hints.enabled: true
+# ============================== Filebeat modules ==============================
+filebeat.config.modules:
+  # Glob pattern to find module files. Filebeat will look for .yml files in this directory.
+  path: ${path.config}/modules.d/*.yml
 
-processors:
-- add_cloud_metadata: ~
+  # Set to true to enable reloading modules configuration, useful for development.
+  reload.enabled: false
 
+  # The period to check for configuration changes.
+  # reload.period: 10s
+
+# ================================== Outputs ===================================
+
+# ---------------------------- Elasticsearch Output ----------------------------
 output.elasticsearch:
-  hosts: '${ELASTICSEARCH_HOSTS:"localhost:9200"}'
+  # The list of Elasticsearch hosts to connect to.
+  hosts: ["http://localhost:9200"]
+
+  # Optional authentication credentials. Uncomment and set if security is enabled.
+  # username: "kibana_user"
+  # password: "test"
+
+# ================================== Setup ===================================
+
+# --------------------------------- Kibana ---------------------------------
+# Host to connect to Kibana for loading dashboards.
+setup.kibana:
+  host: "http://localhost:5601"
+
+# ----------------------------- Index Management -----------------------------
+# These settings will be managed by the Suricata module automatically,
+# so we disable them here to avoid conflicts.
+setup.ilm.enabled: false
+setup.template.enabled: true
+setup.template.name: "suricata"
+setup.template.pattern: "suricata-*"
+setup.template.overwrite: true
