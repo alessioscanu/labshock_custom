@@ -153,7 +153,7 @@ services:
       - ./suricata/etc:/etc/suricata              # Suricata config files
       - ./suricata/log:/var/log/suricata          # Suricata logs
       - ./suricata/rules:/var/lib/suricata/rules  # Suricata rules
-    command: -i eth0 -i br-6990a6af9f1b -i br-82d1c6fd2752 # -i eth1
+    command: -i ens33 -i br-5195aa0d78b9 -i br-f128466d68ef # -i eth1
     restart: unless-stopped
 
   zeek:
