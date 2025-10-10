@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 networks:
   l2_network:
@@ -24,7 +24,6 @@ services:
       - portal-data:/app/config/
     ports:
       - "443:443"
-
 
   dmz-firewall:
     build: ./dmz-firewall/
@@ -70,12 +69,12 @@ services:
       l3_network:
         ipv4_address: 192.168.3.20
     ports:
-      - '1881:1881'
+      - "1881:1881"
     volumes:
       - scada-data:/usr/src/app/FUXA/server/_appdata
     dns:
       - 127.0.0.11
-        
+
   plc:
     build: ./plc/
     cap_add:
@@ -123,7 +122,7 @@ services:
       - portal
     volumes:
       - portal-data:/app/portal/
-      
+
   collector:
     build: ./collector/
     cap_add:
@@ -138,7 +137,7 @@ services:
       - portal
     volumes:
       - portal-data:/app/portal/
-  
+
   suricata:
     image: jasonish/suricata:latest
     container_name: suricata
@@ -150,33 +149,72 @@ services:
     #   - l2_network
     #   - l3_network
     volumes:
-      - ./suricata/etc:/etc/suricata              # Suricata config files
-      - ./suricata/log:/var/log/suricata          # Suricata logs
-      - ./suricata/rules:/var/lib/suricata/rules  # Suricata rules
+      - ./suricata/etc:/etc/suricata # Suricata config files
+      - ./suricata/log:/var/log/suricata # Suricata logs
+      - ./suricata/rules:/var/lib/suricata/rules # Suricata rules
     command: -i ens33 -i br-5195aa0d78b9 -i br-f128466d68ef # -i eth1
     restart: unless-stopped
 
-  zeek:
+  zeek_ens33:
     image: zeek/zeek:latest
-    container_name: zeek
-    network_mode: host # required for Suricata to access network interfaces directly
+    container_name: zeek_ens33
+    network_mode: host
     cap_add:
-      - NET_ADMIN # allow Suricata to monitor network traffic
+      - NET_ADMIN
       - NET_RAW
-    # networks:
-    #   - l2_network
-    #   - l3_network
     volumes:
-      - ./zeek/etc:/usr/local/zeek/etc/               # Zeek config files
-      - ./zeek/logs:/usr/local/zeek/logs              # Zeek logs
-      # - ./zeek/scripts:/usr/local/zeek/share/zeek     # Zeek scripts
-      # - ./zeek/main_config:/usr/local/zeek/share/zeek/site/  # Zeek main config file
-      - ./zeek/main_config/zeek:/usr/local/zeek/share/zeek/  # Zeek main config file
-    command: zeek -i eth0 # -i eth1
+      - ./zeek_ens33/logs:/var/log/zeek
+      - ./zeek_ens33/site:/opt/zeek/site:ro
+      - ./zeek_ens33/etc:/opt/zeek/etc:ro
+    command: >
+      sh -c "
+        mkdir -p /var/log/zeek &&
+        /usr/local/zeek/bin/zeek -C -i ens33 local &&
+        sleep infinity
+      "
+
+    restart: unless-stopped
+
+  zeek_br1:
+    image: zeek/zeek:latest
+    container_name: zeek_br1
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./zeek_br1/logs:/var/log/zeek
+      - ./zeek_br1/site:/opt/zeek/site:ro
+      - ./zeek_br1/etc:/opt/zeek/etc:ro
+    command: >
+      sh -c "
+        mkdir -p /var/log/zeek &&
+        /usr/local/zeek/bin/zeek -C -i br-5195aa0d78b9 local &&
+        sleep infinity
+      "
+    restart: unless-stopped
+
+  zeek_br2:
+    image: zeek/zeek:latest
+    container_name: zeek_br2
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./zeek_br2/logs:/var/log/zeek
+      - ./zeek_br2/site:/opt/zeek/site:ro
+      - ./zeek_br2/etc:/opt/zeek/etc:ro
+    command: >
+      sh -c "
+        mkdir -p /var/log/zeek &&
+        /usr/local/zeek/bin/zeek -C -i br-f128466d68ef local &&
+        sleep infinity
+      "
     restart: unless-stopped
 
 volumes:
   scada-data:
-  plc-data:    
+  plc-data:
   ews-data:
   portal-data:
