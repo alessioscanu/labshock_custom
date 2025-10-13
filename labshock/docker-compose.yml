@@ -163,16 +163,18 @@ services:
       - NET_ADMIN
       - NET_RAW
     volumes:
-      - ./zeek_ens33/logs:/var/log/zeek
-      - ./zeek_ens33/site:/opt/zeek/site:ro
-      - ./zeek_ens33/etc:/opt/zeek/etc:ro
+      # Shared site scripts
+      - ./zeek/site:/usr/local/zeek/share/zeek/site
+      # Shared configs
+      - ./zeek/etc:/usr/local/zeek/etc
+      # Shared logs
+      - ./zeek/logs:/usr/local/zeek/logs
     command: >
       sh -c "
-        mkdir -p /var/log/zeek &&
+        mkdir -p /usr/local/zeek/logs &&
         /usr/local/zeek/bin/zeek -C -i ens33 local &&
         sleep infinity
       "
-
     restart: unless-stopped
 
   zeek_br1:
@@ -183,12 +185,12 @@ services:
       - NET_ADMIN
       - NET_RAW
     volumes:
-      - ./zeek_br1/logs:/var/log/zeek
-      - ./zeek_br1/site:/opt/zeek/site:ro
-      - ./zeek_br1/etc:/opt/zeek/etc:ro
+      - ./zeek/site:/usr/local/zeek/share/zeek/site
+      - ./zeek/etc:/usr/local/zeek/etc
+      - ./zeek/logs:/usr/local/zeek/logs
     command: >
       sh -c "
-        mkdir -p /var/log/zeek &&
+        mkdir -p /usr/local/zeek/logs &&
         /usr/local/zeek/bin/zeek -C -i br-5195aa0d78b9 local &&
         sleep infinity
       "
@@ -202,12 +204,12 @@ services:
       - NET_ADMIN
       - NET_RAW
     volumes:
-      - ./zeek_br2/logs:/var/log/zeek
-      - ./zeek_br2/site:/opt/zeek/site:ro
-      - ./zeek_br2/etc:/opt/zeek/etc:ro
+      - ./zeek/site:/usr/local/zeek/share/zeek/site
+      - ./zeek/etc:/usr/local/zeek/etc
+      - ./zeek/logs:/usr/local/zeek/logs
     command: >
       sh -c "
-        mkdir -p /var/log/zeek &&
+        mkdir -p /usr/local/zeek/logs &&
         /usr/local/zeek/bin/zeek -C -i br-f128466d68ef local &&
         sleep infinity
       "
