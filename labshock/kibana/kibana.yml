@@ -1,0 +1,11 @@
+server.name: kibana
+server.host: "0.0.0.0"
+server.port: 5601
+
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.ssl.verificationMode: none
+
+xpack.fleet.enabled: false
+xpack.encryptedSavedObjects.encryptionKey: "labshock_thesis_encryption_key_32c"
+
+logging.root.level: info
