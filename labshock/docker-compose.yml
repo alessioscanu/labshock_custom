@@ -1,16 +1,22 @@
 networks:
   l2_network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-l2
     ipam:
       config:
         - subnet: 192.168.2.0/24
   l3_network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-l3
     ipam:
       config:
         - subnet: 192.168.3.0/24
   dmz_network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-dmz
     ipam:
       config:
         - subnet: 172.16.0.0/16
@@ -152,7 +158,16 @@ services:
       - ./suricata/etc:/etc/suricata
       - ./suricata/log:/var/log/suricata
       - ./suricata/rules:/var/lib/suricata/rules
-    command: -i ens33 -i br-5195aa0d78b9 -i br-f128466d68ef
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for interfaces...' &&
+        until ip link show br-l2 > /dev/null 2>&1 && ip link show br-l3 > /dev/null 2>&1; do
+          echo 'br-l2/br-l3 not ready yet, retrying in 2s...' && sleep 2;
+        done &&
+        echo 'Interfaces found. Starting Suricata.' &&
+        suricata-update --no-reload &&
+        exec suricata -c /etc/suricata/suricata.yaml -i ens33 -i br-l2 -i br-l3
+      "
     restart: unless-stopped
 
   zeek_ens33:
@@ -162,6 +177,8 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    depends_on:
+      - router
     volumes:
       - ./zeek/site:/usr/local/zeek/share/zeek/site
       - ./zeek/etc:/usr/local/zeek/etc
@@ -169,8 +186,7 @@ services:
     command: >
       sh -c "
         mkdir -p /usr/local/zeek/logs &&
-        /usr/local/zeek/bin/zeek -C -i ens33 local &&
-        sleep infinity
+        exec /usr/local/zeek/bin/zeek -C -i ens33 local
       "
     restart: unless-stopped
 
@@ -181,15 +197,16 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    depends_on:
+      - plc
     volumes:
       - ./zeek/site:/usr/local/zeek/share/zeek/site
       - ./zeek/etc:/usr/local/zeek/etc
       - ./zeek/logs/br1:/usr/local/zeek/logs
     command: >
       sh -c "
-        mkdir -p /usr/local/zeek/logs &&
-        /usr/local/zeek/bin/zeek -C -i br-5195aa0d78b9 local &&
-        sleep infinity
+        until ip link show br-l2 > /dev/null 2>&1; do sleep 2; done &&
+        exec /usr/local/zeek/bin/zeek -C -i br-l2 local
       "
     restart: unless-stopped
 
@@ -200,15 +217,16 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    depends_on:
+      - router
     volumes:
       - ./zeek/site:/usr/local/zeek/share/zeek/site
       - ./zeek/etc:/usr/local/zeek/etc
       - ./zeek/logs/br2:/usr/local/zeek/logs
     command: >
       sh -c "
-        mkdir -p /usr/local/zeek/logs &&
-        /usr/local/zeek/bin/zeek -C -i br-f128466d68ef local &&
-        sleep infinity
+        until ip link show br-l3 > /dev/null 2>&1; do sleep 2; done &&
+        exec /usr/local/zeek/bin/zeek -C -i br-l3 local
       "
     restart: unless-stopped
 
