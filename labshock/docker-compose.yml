@@ -1,5 +1,3 @@
-version: "3.9"
-
 networks:
   l2_network:
     driver: bridge
@@ -16,6 +14,11 @@ networks:
     ipam:
       config:
         - subnet: 172.16.0.0/16
+  elk_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24
 
 services:
   portal:
@@ -141,18 +144,15 @@ services:
   suricata:
     image: jasonish/suricata:latest
     container_name: suricata
-    network_mode: host # required for Suricata to access network interfaces directly
+    network_mode: host
     cap_add:
-      - NET_ADMIN # allow Suricata to monitor network traffic
+      - NET_ADMIN
       - NET_RAW
-    # networks:
-    #   - l2_network
-    #   - l3_network
     volumes:
-      - ./suricata/etc:/etc/suricata # Suricata config files
-      - ./suricata/log:/var/log/suricata # Suricata logs
-      - ./suricata/rules:/var/lib/suricata/rules # Suricata rules
-    command: -i ens33 -i br-5195aa0d78b9 -i br-f128466d68ef # -i eth1
+      - ./suricata/etc:/etc/suricata
+      - ./suricata/log:/var/log/suricata
+      - ./suricata/rules:/var/lib/suricata/rules
+    command: -i ens33 -i br-5195aa0d78b9 -i br-f128466d68ef
     restart: unless-stopped
 
   zeek_ens33:
@@ -163,12 +163,9 @@ services:
       - NET_ADMIN
       - NET_RAW
     volumes:
-      # Shared site scripts
       - ./zeek/site:/usr/local/zeek/share/zeek/site
-      # Shared configs
       - ./zeek/etc:/usr/local/zeek/etc
-      # Shared logs
-      - ./zeek/logs:/usr/local/zeek/logs
+      - ./zeek/logs/ens33:/usr/local/zeek/logs
     command: >
       sh -c "
         mkdir -p /usr/local/zeek/logs &&
@@ -187,7 +184,7 @@ services:
     volumes:
       - ./zeek/site:/usr/local/zeek/share/zeek/site
       - ./zeek/etc:/usr/local/zeek/etc
-      - ./zeek/logs:/usr/local/zeek/logs
+      - ./zeek/logs/br1:/usr/local/zeek/logs
     command: >
       sh -c "
         mkdir -p /usr/local/zeek/logs &&
@@ -206,7 +203,7 @@ services:
     volumes:
       - ./zeek/site:/usr/local/zeek/share/zeek/site
       - ./zeek/etc:/usr/local/zeek/etc
-      - ./zeek/logs:/usr/local/zeek/logs
+      - ./zeek/logs/br2:/usr/local/zeek/logs
     command: >
       sh -c "
         mkdir -p /usr/local/zeek/logs &&
@@ -215,8 +212,79 @@ services:
       "
     restart: unless-stopped
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    container_name: elasticsearch
+    environment:
+      - node.name=es01
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.license.self_generated.type=basic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro 
+    ports:
+      - "9200:9200"
+    networks:
+      - elk_network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200/_cluster/health | grep -qE 'green|yellow'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.3.0
+    container_name: kibana
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+      - XPACK_FLEET_ENABLED=false
+    ports:
+      - "5601:5601"
+    networks:
+      - elk_network
+    restart: unless-stopped
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.3.0
+    container_name: filebeat
+    user: root
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./suricata/log:/var/log/suricata:ro
+      - ./zeek/logs/ens33:/var/log/zeek/ens33:ro
+      - ./zeek/logs/br1:/var/log/zeek/br1:ro
+      - ./zeek/logs/br2:/var/log/zeek/br2:ro
+    networks:
+      - elk_network
+    command: filebeat -e --strict.perms=false
+    restart: unless-stopped
+
 volumes:
   scada-data:
   plc-data:
   ews-data:
   portal-data:
+  es-data:

@@ -1,0 +1,63 @@
+# ── Suricata module ─────────────────────────────────────────────────
+filebeat.modules:
+  - module: suricata
+    eve:
+      enabled: true
+      var.paths:
+        - /var/log/suricata/eve.json
+
+# ── Zeek inputs (one per interface, to track them separately) ────────
+  - module: zeek
+    connection:
+      enabled: true
+      var.paths:
+        - /var/log/zeek/ens33/conn.log
+        - /var/log/zeek/br1/conn.log
+        - /var/log/zeek/br2/conn.log
+    dns:
+      enabled: true
+      var.paths:
+        - /var/log/zeek/ens33/dns.log
+        - /var/log/zeek/br1/dns.log
+        - /var/log/zeek/br2/dns.log
+    http:
+      enabled: true
+      var.paths:
+        - /var/log/zeek/ens33/http.log
+        - /var/log/zeek/br1/http.log
+        - /var/log/zeek/br2/http.log
+    notice:
+      enabled: true
+      var.paths:
+        - /var/log/zeek/ens33/notice.log
+        - /var/log/zeek/br1/notice.log
+        - /var/log/zeek/br2/notice.log
+    ssl:
+      enabled: true
+      var.paths:
+        - /var/log/zeek/ens33/ssl.log
+        - /var/log/zeek/br1/ssl.log
+        - /var/log/zeek/br2/ssl.log
+
+# ── Processors ───────────────────────────────────────────────────────
+processors:
+  - add_host_metadata: ~
+  - add_docker_metadata: ~
+
+# ── Kibana (for dashboard auto-setup) ────────────────────────────────
+setup.kibana:
+  host: "http://kibana:5601"
+
+setup.dashboards.enabled: true
+
+# ── Output ───────────────────────────────────────────────────────────
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+# ── Logging ──────────────────────────────────────────────────────────
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
