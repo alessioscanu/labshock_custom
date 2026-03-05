@@ -8,3 +8,7 @@
 # @load my_custom_rules
 
 redef Log::default_logdir = "/usr/local/zeek/logs";
+
+# ── JSON output for Filebeat compatibility ─────────────────────────────
+redef LogAscii::use_json           = T;
+redef LogAscii::json_timestamps    = JSON::TS_ISO8601;
