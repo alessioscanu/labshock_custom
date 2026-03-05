@@ -248,7 +248,7 @@ services:
         hard: 65536
     volumes:
       - es-data:/usr/share/elasticsearch/data
-      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro 
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - "9200:9200"
     networks:
@@ -281,6 +281,15 @@ services:
     networks:
       - elk_network
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:5601/api/status | grep -q 'available'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:9.3.0
@@ -288,6 +297,8 @@ services:
     user: root
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      kibana:
         condition: service_healthy
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
